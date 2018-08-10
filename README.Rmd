@@ -1,0 +1,125 @@
+---
+title: "Top Defenses"
+author: "Alex Chitsazan"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+always_allow_html: yes  
+output:
+  github_document:
+    toc: true
+    toc_depth: 5
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, cache=T, fig.width = 11, fig.height = 8.5)
+```
+
+## Top Defenses
+
+Recently took a workshop at the University of Washington on unsupervised machine learning so I decided to apply it to sports. What I did is I used a webscraper that downloaded and scraped the team defense data for the top 5 defenses for every team from 1985 to Presenst. I then scaled and normalized the data and applied a deminsion reduction (multidemensional scaling) algorythm to try and represent the data in a 2D plot. What this multidimensional analysis does is take all of the traits (in this case defensive traits such as yards against, 1st down %, etc, - I'll post the raw table below) and calculates a value of all combined traits in 2 dimensions to plot relative distances, essentially a similarity score between every team in the dataset. 
+
+
+
+Then I applied a heerierachical clustering algorithm to group defenses into clusters of teirs. In the plot these will be the different colors The colors take these distances and build a tree that puts the most similar teams into groups of related they are. So teams like the 1985 Bears, 1991 Eagles and the 2000 ravens are put in the same group cause they are really really good. It does this for every team and places them in clusters. You can think of these as tiers. This is what the colors are and is called hierarchal clustering.
+
+Some things that I find very interesting:
+
+1. Wow Ravens 2000 was an all time great. Huge outlier. 
+2. Cluster 1 clearly all time great. 85 bears, 2013 seahawks, 2000 Ravens, 2008 Steelers, 1991 Eagles, etc.
+3. Browns_2011 and patriots_1988 it looks like may have been outliers (not as good) when compared to top defenses. 
+4. Jags and Vikings from 2017 both made top cluster
+
+```{r Defenses, echo=FALSE, warning=F, message=FALSE}
+library(parallel)
+library(ggplot2)
+library(rvest)
+library(tidyverse)
+
+getDefenseTable <- function(Year, nTeams=5) {
+  ## Pull Data
+  defense <- read_html(sprintf("https://www.pro-football-reference.com/years/%s/opp.htm", Year)) %>% 
+    html_nodes(css = '#team_stats') %>% 
+    html_table(header = TRUE)
+  ## Get Defense from List
+  defense <- defense[[1]]
+  
+  ## Fix Var Names
+  pre <- gsub(" ", "", colnames(defense))
+  pre <- gsub("TotYds&TO", "Tot", pre)
+  colnames(defense) <- paste(pre, defense[1,], sep = ".")
+  colnames(defense) <- gsub("^\\.", "", colnames(defense))
+  ## Get rid of non matching Var
+  expIndex <- grep("EXP|\\%",colnames(defense))
+  if (any(expIndex)) {
+    defense <- defense[,-1*expIndex]
+  }
+  
+  ## Pull out columns we don't want
+  defense <- defense[-1*c(1,34:36),]
+  rownames(defense) <- NULL
+  ## FIx Defenseive Year
+  defense$Year <- rep(Year, nrow(defense))
+  defense <- defense[1:nTeams,]
+  rownames(defense) <- paste(defense$Tm, defense$Year, sep = "_")
+  defense <- defense[,-1*grep("Penalties|^G$|FL|Year|Tm|Rk",colnames(defense))]
+  defense<- data.matrix(defense)
+  return(defense)
+}
+
+
+getAllDefenses <- function(start, end, raw = F, Cores = 3) {
+  ## Multiple cores for speed
+  defenseList <- mclapply(end:start, FUN = getDefenseTable, mc.cores = Cores)
+  defense_ALL <- do.call(rbind, defenseList)
+  
+  ## Return raw or scaled
+  if (raw == T) {
+    return(defense_ALL)
+  } else {
+    scaled_defense_ALL <- scale(defense_ALL, scale = T, center = T)
+    return(scaled_defense_ALL)
+  }
+}
+
+
+
+
+plotMDS <- function(matrix, distMethod = "euclidian", numClusters=6, returnClusters=T) {
+  ### Get dist matrix for MDS and get MDS coord
+  Dmat = dist(matrix,method="euclidean")
+  mdsres = cmdscale(Dmat,k = 2)
+  mdsres<- data.frame(mdsres)
+  colnames(mdsres) <- c("MDS1", "MDS2")
+  
+  ### Cluster 
+  Dmat = dist(matrix,method=distMethod)
+  com.hc = hclust(Dmat,method="ward.D")
+  res.com = cutree(com.hc,numClusters)
+  clusters <-data.frame(res.com)
+  clusters$Name <- factor(sprintf("Cluster%s", clusters$res.com))
+  clusters <- clusters[,c(2), drop=FALSE]
+  # Return Clusters
+  if (returnClusters ==T) {
+    assign("clusters", clusters, envir = .GlobalEnv)
+  }
+  
+  ### Plot MDS with Clusters
+  
+  ## Get out year for title
+  years <- as.numeric(gsub(".*_([0-9]+$)","\\1",rownames(matrix)))
+  startYear <- min(years)
+  endYear <- max(years)
+  plotTitle <- sprintf("Top 5 defenses every year from %s-%s", startYear, endYear)
+  return(plot(ggplot(mdsres, aes(x=MDS1, y = MDS2, label = row.names(mdsres), colour = factor(res.com))) +
+    geom_text(size=2.9) + 
+    theme_bw() +
+    ggtitle(plotTitle) +
+    labs(colour = "Clusters")))
+}
+
+
+scaled_defense_ALL <- getAllDefenses(start = 2017, end = 1985, raw = F, Cores = 3)
+rownames(scaled_defense_ALL) <- gsub(".*[[:space:]]([0-z]+_[0-9]+$)", "\\1",rownames(scaled_defense_ALL))
+plotMDS(scaled_defense_ALL, returnClusters = T)
+
+```
