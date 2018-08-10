@@ -123,3 +123,34 @@ rownames(scaled_defense_ALL) <- gsub(".*[[:space:]]([0-z]+_[0-9]+$)", "\\1",rown
 plotMDS(scaled_defense_ALL, returnClusters = T)
 
 ```
+
+
+Here is a heatmap that plots scaled normalized data and gives a little insight into why the specfic defenses were chosen. It's pretty interesting how tightly knight the best defenses group is (2000 ravens, 2008 Stelers) is very distinguishable by them being great in all categories AS WELL as being the best interceptions.
+
+
+```{r defensesheatmap, echo=FALSE, warning=F, message=FALSE, fig.height=20, width=6}
+library(pheatmap)
+plotHeatmap <- function(matrix, distMethod = "euclidean", numClusters=6) {
+  ## Calulate Distance and HClust
+  distance <- dist(matrix, method=distMethod)
+  hclustering <-hclust(distance, method="ward.D")
+  res.com = cutree(hclustering,numClusters)
+  clusters <-data.frame(res.com)
+  clusters$Name <- factor(sprintf("Cluster%s", clusters$res.com))
+  clusters <- clusters[,c(2), drop=FALSE]
+  
+  matrix[matrix < -3 ] <- -3
+  ## plot heatmap
+  jet.colors <- colorRampPalette(c("#b2182b", "#f7f7f7", "#2166ac"))(n=111)
+  pheatmap(matrix,
+           color = jet.colors,
+           cellwidth =7,
+           cellheight = 7, 
+           fontsize_row = 7,
+           fontsize_col = 7,
+           cluster_rows = hclustering,
+           annotation_row =  clusters,) 
+}
+
+plotHeatmap(scaled_defense_ALL)
+```

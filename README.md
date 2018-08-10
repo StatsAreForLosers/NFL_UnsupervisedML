@@ -20,3 +20,7 @@ Some things that I find very interesting:
 4.  Jags and Vikings from 2017 both made top cluster
 
 ![](README_files/figure-markdown_github/Defenses-1.png)
+
+Here is a heatmap that plots scaled normalized data and gives a little insight into why the specfic defenses were chosen. It's pretty interesting how tightly knight the best defenses group is (2000 ravens, 2008 Stelers) is very distinguishable by them being great in all categories AS WELL as being the best interceptions.
+
+![](README_files/figure-markdown_github/defensesheatmap-1.png)

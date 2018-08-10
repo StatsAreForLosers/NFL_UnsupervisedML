@@ -97,12 +97,12 @@ cluster1 <- clusters[clusters[,1] == "Cluster1",drop=FALSE]
 plotMDS(scaled_defense_ALL[rownames(cluster1),], numClusters = 4)
 
 
-scaled_defense_ALL_70 <- getAllDefenses(start = 2017, end = 1970, raw = F, Cores = 3)
-plotMDS(scaled_defense_ALL_70)
-cluster1 <- clusters[clusters[,1] == 1,,drop=FALSE]
-plotMDS(scaled_defense_ALL[rownames(cluster1),], numClusters = 4)
-
-
+# scaled_defense_ALL_70 <- getAllDefenses(start = 2017, end = 1970, raw = F, Cores = 3)
+# plotMDS(scaled_defense_ALL_70)
+# cluster1 <- clusters[clusters[,1] == 1,,drop=FALSE]
+# plotMDS(scaled_defense_ALL[rownames(cluster1),], numClusters = 4)
+# 
+# 
 
 
 
@@ -153,22 +153,6 @@ plotMDS(scaled_offense_ALL, distMethod = "manhattan")
 cluster1 <- clusters[clusters[,1] == 1,,drop=FALSE]
 plotMDS(scaled_offense_ALL[rownames(cluster1),], numClusters = 4)
 
-
-library("gplots")
-aa = grep("grey",colors())
-bb = grep("green",colors())
-cc = grep("red",colors())
-gcol2 = colors()[c(aa[1:2],bb[1:25],cc[1:50])]
-library(gplots)
-
-heatmap.2(scaled_offense_ALL,
-          col=jet.colors,
-          dendrogram = "row", 
-          distfun = function(x)dist(x,method="manhattan"),
-          hclustfun = function(x)hclust(x,method="ward.D"), 
-          cexRow = .25,
-          cexCol =0.4,trace = "none",
-          margins = c(3,3.9))
 
 plotHeatmap <- function(matrix, distMethod = "euclidean", numClusters=6) {
   ## Calulate Distance and HClust
