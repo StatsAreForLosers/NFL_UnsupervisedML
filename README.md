@@ -1,9 +1,12 @@
 Top Defenses
 ================
 Alex Chitsazan
-09 August, 2018
+11 August, 2018
 
 -   [Top Defenses](#top-defenses)
+-   ['Elite' Cluster Defense](#elite-cluster-defense)
+-   [Top Offenses](#top-offenses)
+-   ['Elite' Cluster Offenses](#elite-cluster-offenses)
 
 Top Defenses
 ------------
@@ -21,6 +24,41 @@ Some things that I find very interesting:
 
 ![](README_files/figure-markdown_github/Defenses-1.png)
 
-Here is a heatmap that plots scaled normalized data and gives a little insight into why the specfic defenses were chosen. It's pretty interesting how tightly knight the best defenses group is (2000 ravens, 2008 Stelers) is very distinguishable by them being great in all categories AS WELL as being the best interceptions.
+Here is a heatmap that plots scaled normalized data and gives a little insight into why the specfic defenses were chosen. It's pretty interesting how tightly knight the best defenses group is (2000 ravens, 2008 Stelers) is very distinguishable by them being great in all categories AS WELL as being the best interceptions
 
 ![](README_files/figure-markdown_github/defensesheatmap-1.png)
+
+'Elite' Cluster Defense
+-----------------------
+
+It is apparent that cluster 1 seems to encompass the tier with the most 'elite' denfenses. Since that cluster contained 48 teams, I decided to extract that group and then recluster to see how the elite cluster segregates. Cluter 1 of this the new data contains what most football exterts would consider the best defenses of all time.
+
+![](README_files/figure-markdown_github/Defenseszoom-1.png)
+
+Zooming in on the heatmap, you can start to see why the elite cluster truly is elite. As mentioned before, it seems to be very good Passing/Rushing numbers AS WELL as the ability to capitlize and get turnovers.
+
+![](README_files/figure-markdown_github/defensesheatmapzoom-1.png)
+
+Top Offenses
+------------
+
+Then doing a similar thing for offenses. I downloaded the same data (top 5 offenses) for every year from 1985 to 2017 and ran the same dimension reduction and herirachical clustering programs.
+
+Some things that I find very interesting:
+
+1.  Denver 2013 (Peyton Manning 55 TD year) truly was something special and an outlier.
+2.  Cluster 1 contains the 'elite' offenses of all time (Broncos, 2013, Rams 2000, Falcons 2016, Patriots 2007, etc)
+3.  Pretty remarkable to see how great all time some of these saints offenses have been
+
+![](README_files/figure-markdown_github/Offenses-1.png)
+
+Heatmap showcasing the z-score normalized values of each cluster to show relative levels of why each cluster was assigned. What I find most fascinating is the cluster the average sports fan considers to be the 'elite' offenses, the data is heavily weighted to be great all time passing offeneses. Unlike defenses where the best of all time had all-around high end stats encompassing ALL categories, the elite offenses have great passing stats. Even more shocking, they actually have low-end rushing stats. It is easy to see why QB is by far the most important position in football.
+
+![](README_files/figure-markdown_github/offensesHeatmap-1.png)
+
+'Elite' Cluster Offenses
+------------------------
+
+Like for defenses, it is apparent that cluster 1 seems to encompass the tier with the most 'elite' offenses. Since that cluster contained 31 teams, I decided to extract that group and then recluster to see how the 'elite' cluster segregates. Zooming in on the heatmap, you can start to see why the elite cluster truly is elite. You can first see as I said before passing is very important. Also, limiting TOs.
+
+![](README_files/figure-markdown_github/offensesHeatmapZoom-1.png)

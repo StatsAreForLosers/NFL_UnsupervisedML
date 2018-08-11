@@ -30,6 +30,7 @@ Some things that I find very interesting:
 4. Jags and Vikings from 2017 both made top cluster
 
 ```{r Defenses, echo=FALSE, warning=F, message=FALSE}
+
 library(parallel)
 library(ggplot2)
 library(rvest)
@@ -121,11 +122,10 @@ plotMDS <- function(matrix, distMethod = "euclidian", numClusters=6, returnClust
 scaled_defense_ALL <- getAllDefenses(start = 2017, end = 1985, raw = F, Cores = 3)
 rownames(scaled_defense_ALL) <- gsub(".*[[:space:]]([0-z]+_[0-9]+$)", "\\1",rownames(scaled_defense_ALL))
 plotMDS(scaled_defense_ALL, returnClusters = T)
-
 ```
 
 
-Here is a heatmap that plots scaled normalized data and gives a little insight into why the specfic defenses were chosen. It's pretty interesting how tightly knight the best defenses group is (2000 ravens, 2008 Stelers) is very distinguishable by them being great in all categories AS WELL as being the best interceptions.
+Here is a heatmap that plots scaled normalized data and gives a little insight into why the specfic defenses were chosen. It's pretty interesting how tightly knight the best defenses group is (2000 ravens, 2008 Stelers) is very distinguishable by them being great in all categories AS WELL as being the best interceptions
 
 
 ```{r defensesheatmap, echo=FALSE, warning=F, message=FALSE, fig.height=20, width=6}
@@ -136,7 +136,7 @@ plotHeatmap <- function(matrix, distMethod = "euclidean", numClusters=6) {
   hclustering <-hclust(distance, method="ward.D")
   res.com = cutree(hclustering,numClusters)
   clusters <-data.frame(res.com)
-  clusters$Name <- factor(sprintf("Cluster%s", clusters$res.com))
+  clusters$Cluster <- factor(sprintf("Cluster%s", clusters$res.com))
   clusters <- clusters[,c(2), drop=FALSE]
   
   matrix[matrix < -3 ] <- -3
@@ -149,8 +149,160 @@ plotHeatmap <- function(matrix, distMethod = "euclidean", numClusters=6) {
            fontsize_row = 7,
            fontsize_col = 7,
            cluster_rows = hclustering,
+           scale = 'none',
            annotation_row =  clusters,) 
 }
 
 plotHeatmap(scaled_defense_ALL)
+```
+
+## 'Elite' Cluster Defense
+
+It is apparent that cluster 1 seems to encompass the tier with the most 'elite' denfenses. Since that cluster contained 48 teams, I decided to extract that group and then recluster to see how the elite cluster segregates. Cluter 1 of this the new data contains what most football exterts would consider the best defenses of all time.
+
+```{r Defenseszoom, echo=FALSE, warning=F, message=FALSE}
+cluster1 <- clusters[clusters[,1] == "Cluster1",,drop=FALSE]
+plotMDS(scaled_defense_ALL[rownames(cluster1),],returnClusters = T, numClusters = 5)
+```
+
+Zooming in on the heatmap, you can start to see why the elite cluster truly is elite. As mentioned before, it seems to be very good Passing/Rushing numbers AS WELL as the ability to capitlize and get turnovers.
+
+
+```{r defensesheatmapzoom, echo=FALSE, warning=F, message=FALSE, fig.height=8, width=6}
+plotHeatmap(scaled_defense_ALL[rownames(cluster1),], numClusters = 5)
+```
+
+
+## Top Offenses
+
+Then doing a similar thing for offenses. I downloaded the same data (top 5 offenses) for every year from 1985 to 2017 and ran the same dimension reduction and herirachical clustering programs.
+
+Some things that I find very interesting:
+
+1. Denver 2013 (Peyton Manning 55 TD year) truly was something special and an outlier.
+2. Cluster 1 contains the 'elite' offenses of all time (Broncos, 2013, Rams 2000, Falcons 2016, Patriots 2007, etc)
+3. Pretty remarkable to see how great all time some of these saints offenses have been
+
+```{r Offenses, echo=FALSE, warning=F, message=FALSE}
+getOffensiveTable <- function(Year, nTeams=5) {
+  offense <-   returns <- read_html(sprintf("https://www.pro-football-reference.com/years/%s/#all_team_stats", Year)) %>% 
+    html_nodes(xpath = '//comment()') %>%    # select comments
+    html_text() %>%    # extract comment text
+    paste(collapse = '') %>%    # collapse to single string
+    read_html() %>%    # reread as HTML
+    html_node('table#team_stats') %>%    # select desired node
+    html_table()
+  pre <- gsub(" ", "", colnames(offense))
+  pre <- gsub("TotYds&TO", "Tot", pre)
+  colnames(offense) <- paste(pre, offense[1,], sep = ".")
+  colnames(offense) <- gsub("^\\.", "", colnames(offense))
+  expIndex <- grep("EXP|\\%",colnames(offense))
+  if (any(expIndex)) {
+    offense <- offense[,-1*expIndex]
+  }
+  offense <- offense[-1*c(1,34:36),]
+  rownames(offense) <- NULL
+  offense$Year <- rep(Year, nrow(offense))
+  offense <- offense[1:nTeams,]
+  rownames(offense) <- paste(offense$Tm, offense$Year, sep = "_")
+  offense <- offense[,-1*grep("Penalties|^G$|FL|Year|Tm",colnames(offense))]
+  offense<- data.matrix(offense)
+  return(offense)
+}
+
+
+getAllOffenses <- function(start, end, Teams=5, raw = F, Cores = 3) {
+  ## Multiple cores for speed
+  offenseList <- mclapply(end:start, FUN = getOffensiveTable, nTeams = Teams, mc.cores = Cores)
+  offense_ALL <- do.call(rbind, offenseList)
+  
+  ## Return raw or scaled
+  if (raw == T) {
+    return(offense_ALL)
+  } else {
+    scaled_offense_ALL <- scale(offense_ALL, scale = T, center = T)
+    return(scaled_offense_ALL)
+  }
+}
+
+
+plotMDS <- function(matrix, distMethod = "euclidian", numClusters=6, returnClusters=T) {
+  ### Get dist matrix for MDS and get MDS coord
+  Dmat = dist(matrix,method="euclidean")
+  mdsres = cmdscale(Dmat,k = 2)
+  mdsres<- data.frame(mdsres)
+  colnames(mdsres) <- c("MDS1", "MDS2")
+  
+  ### Cluster 
+  Dmat = dist(matrix,method=distMethod)
+  com.hc = hclust(Dmat,method="ward.D")
+  res.com = cutree(com.hc,numClusters)
+  clusters <-data.frame(res.com)
+  clusters$Cluster <- factor(sprintf("Cluster%s", clusters$res.com))
+  clusters <- clusters[,c(2), drop=FALSE]
+  # Return Clusters
+  if (returnClusters ==T) {
+    assign("clusters", clusters, envir = .GlobalEnv)
+  }
+  
+  ### Plot MDS with Clusters
+  
+  ## Get out year for title
+  years <- as.numeric(gsub(".*_([0-9]+$)","\\1",rownames(matrix)))
+  startYear <- min(years)
+  endYear <- max(years)
+  plotTitle <- sprintf("Top 5 offenses every year from %s-%s", startYear, endYear)
+  return(plot(ggplot(mdsres, aes(x=MDS1, y = MDS2, label = row.names(mdsres), colour = factor(res.com))) +
+    geom_text(size=2.9) + 
+    theme_bw() +
+    ggtitle(plotTitle) +
+    labs(colour = "Clusters")))
+}
+
+scaled_offense_ALL <- getAllOffenses(start = 2017, end = 1985, raw = F, Cores = 3)
+rownames(scaled_offense_ALL) <- gsub(".*[[:space:]]([0-z]+_[0-9]+$)", "\\1",rownames(scaled_offense_ALL))
+plotMDS(scaled_offense_ALL, returnClusters = T, distMethod = "manhattan")
+
+```
+
+Heatmap showcasing the z-score normalized values of each cluster to show relative levels of why each cluster was assigned. What I find most fascinating is the cluster the average sports fan considers to be the 'elite' offenses, the data is heavily weighted to be great all time passing offeneses. Unlike defenses where the best of all time had all-around high end stats encompassing ALL categories, the elite offenses have great passing stats. Even more shocking, they actually have low-end rushing stats. It is easy to see why QB is by far the most important position in football.  
+
+
+```{r offensesHeatmap, echo=FALSE, warning=F, message=FALSE, fig.height=20, width=6}
+plotHeatmap <- function(matrix, distMethod = "euclidean", numClusters=6) {
+  
+  ## Calulate Distance and HClust
+  distance <- dist(matrix, method=distMethod)
+  hclustering <-hclust(distance, method="ward.D")
+  res.com = cutree(hclustering,numClusters)
+  clusters <-data.frame(res.com)
+  clusters$Cluster <- factor(sprintf("Cluster%s", clusters$res.com))
+  clusters <- clusters[,c(2), drop=FALSE]
+  
+  matrix[matrix < -3 ] <- -3
+  ## plot heatmap
+  jet.colors <- colorRampPalette(c("#b2182b", "#f7f7f7", "#2166ac"))(n=111)
+  pheatmap(matrix,
+           color = jet.colors,
+           cellwidth =7,
+           cellheight = 7, 
+           fontsize_row = 7,
+           fontsize_col = 7,
+           scale='none',
+           cluster_rows = hclustering,
+           annotation_row =  clusters,) 
+}
+
+plotHeatmap(scaled_offense_ALL, distMethod = "manhattan")
+```
+
+
+## 'Elite' Cluster Offenses
+
+Like for defenses, it is apparent that cluster 1 seems to encompass the tier with the most 'elite' offenses. Since that cluster contained 31 teams, I decided to extract that group and then recluster to see how the 'elite' cluster segregates. Zooming in on the heatmap, you can start to see why the elite cluster truly is elite. You can first see as I said before passing is very important. Also, limiting TOs. 
+
+
+```{r offensesHeatmapZoom, echo=FALSE, warning=F, message=FALSE, fig.height=8, width=6}
+cluster1 <- clusters[clusters[,1] == "Cluster1",,drop=FALSE]
+plotHeatmap(scaled_offense_ALL[rownames(cluster1),], numClusters = 3)
 ```
